@@ -1,9 +1,11 @@
+import torch
 from torchvision import transforms
 
 def get_train_transforms():
-    
-    # Retourne le pipeline de prétraitement pour l'entraînement. Inclut la Data Augmentation pour éviter le surapprentissage.
-
+    """
+    Retourne le pipeline de prétraitement pour l'entraînement. 
+    Inclut la Data Augmentation pour éviter le surapprentissage.
+    """
     return transforms.Compose([
         # 1. Conversion en 3 canaux (requis par ResNet)
         transforms.Grayscale(num_output_channels=3), 
@@ -22,9 +24,10 @@ def get_train_transforms():
     ])
 
 def get_val_transforms():
-
-    # Retourne le pipeline de prétraitement pour la validation et le test. Aucun Data Augmentation ici, juste le redimensionnement et la normalisation.
-    
+    """
+    Retourne le pipeline de prétraitement pour la validation et le test. 
+    Aucune Data Augmentation ici, juste le redimensionnement et la normalisation.
+    """
     return transforms.Compose([
         transforms.Grayscale(num_output_channels=3),
         transforms.Resize((224, 224)), # Redimensionnement strict
@@ -32,3 +35,13 @@ def get_val_transforms():
         transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                              std=[0.229, 0.224, 0.225])
     ])
+
+def get_loss_weights(num_normal=1583, num_pneumonia=4273):
+    """
+    Calcule les poids pour la fonction de perte (CrossEntropyLoss) afin de gérer 
+    le déséquilibre des classes (3x plus de pneumonies que de cas normaux).
+    """
+    weight_normal = num_pneumonia / num_normal
+    weight_pneumonia = 1.0
+    
+    return torch.tensor([weight_normal, weight_pneumonia], dtype=torch.float)
