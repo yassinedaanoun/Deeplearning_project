@@ -109,3 +109,17 @@ test:  {'NORMAL': 234, 'PNEUMONIA': 390} total=624 pneumonia_to_normal_ratio=1.6
 The official `val/` split only has 16 images, which is too small to validate
 on reliably — `get_dataloaders()` pools `train/` and `val/` and re-splits
 them (stratified by class, `resplit_val=True` by default) to fix this.
+
+## Module Preprocessing
+Le fichier `preprocessing.py` contient les pipelines de transformation pour les images radiographiques.
+
+**Utilisation :**
+```python
+from preprocessing import get_train_transforms, get_val_transforms, get_loss_weights
+
+train_transform = get_train_transforms()
+val_transform = get_val_transforms()
+
+# Pour la fonction de perte (Romaric)
+weights = get_loss_weights(num_normal=1583, num_pneumonia=4273)
+criterion = nn.CrossEntropyLoss(weight=weights)
