@@ -1,0 +1,21 @@
+# Dataset (downloaded locally by data.py, never committed)
+data/
+chest_xray/
+
+# Generated artifacts
+outputs/
+*.png
+!docs/*.png
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

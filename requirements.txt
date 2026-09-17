@@ -1,0 +1,12 @@
+# Core
+torch>=2.0
+torchvision>=0.15
+Pillow>=9.0
+numpy>=1.23
+
+# Data lead
+kagglehub>=0.2
+matplotlib>=3.6
+
+# Dev / tests
+pytest>=7.0
