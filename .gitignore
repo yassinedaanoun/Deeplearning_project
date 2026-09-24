@@ -1,3 +1,14 @@
+# Fichiers Python générés
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Résultats et artefacts générés
+artifacts/
+
+# Cache des tests
+.pytest_cache/
+
 # Dataset (downloaded locally by data.py, never committed)
 data/
 chest_xray/
