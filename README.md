@@ -180,3 +180,28 @@ trained_model, history = train_model(
 )
 plot_training_history(history, "artifacts/training_curves.png")
 ```
+
+## Evaluation and demo (Yassine)
+
+After Romaric saves a trained ResNet checkpoint to `models/best_model.pth`,
+evaluate it on the held-out test split:
+
+```bash
+python evaluate.py --checkpoint models/best_model.pth
+```
+
+The command prints accuracy, pneumonia precision/recall/F1, ROC AUC, and the
+confusion matrix. It saves `confusion_matrix.png` and, when both test classes
+are present, `roc_curve.png` under `artifacts/evaluation/`.
+
+Launch the upload demo locally with the same checkpoint:
+
+```bash
+python demo.py --checkpoint models/best_model.pth
+```
+
+The interface opens on the local machine and reports `NORMAL` or `PNEUMONIA`
+with the predicted class's softmax score. It is a screening-assistance
+prototype, not a diagnostic tool. The synthetic checkpoint created by
+`test_training.py` is only for testing the training loop and cannot be used
+for this ResNet demo.

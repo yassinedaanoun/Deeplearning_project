@@ -7,6 +7,8 @@ numpy>=1.23
 # Data lead
 kagglehub>=0.2
 matplotlib>=3.6
+scikit-learn>=1.9.1,<2
+gradio>=6.28,<7
 
 # Dev / tests
 pytest>=7.0

@@ -37,10 +37,14 @@ train_model(model, train_loader, val_loader, criterion, optimizer,
             num_epochs=10) -> (trained_model, history)
 
 # Evaluation lead delivers (evaluate.py):
-evaluate_model(model, test_loader) -> (confusion_matrix, precision, recall, f1)
+compute_metrics(y_true, y_pred, pneumonia_scores) -> dict
+evaluate_model(model, test_loader, device=None) -> dict
+# Keys: confusion_matrix, accuracy, precision, recall, f1, roc_auc, fpr, tpr.
+# Positive class is 1 = PNEUMONIA; ROC fields are None for one-class labels.
 
 # Demo lead delivers (demo.py):
-predict(model, image) -> (label, confidence)
+predict(model, image, device=None) -> (label, confidence)
+# label is NORMAL or PNEUMONIA; confidence is its softmax score in [0, 1].
 ```
 
 ## Repo structure
@@ -64,7 +68,7 @@ project/
 | 2 | Preprocessing lead | Ayoub | A handful of sample images downloaded separately — doesn't wait for the Data lead's finished pipeline, just needs *some* images to test resize/normalize/augment on |
 | 3 | Model lead | Omar | Dummy tensors `torch.randn(8, 3, 224, 224)` — a model only cares about shape, not where the numbers came from |
 | 4 | Training lead | Romaric | A tiny public dataset already in `torchvision.datasets` (e.g. a small CIFAR-10 subset), or dummy tensors + dummy labels — proves the loop mechanics (forward, loss, backward, optimizer step, logging) without needing real pneumonia data or the final model |
-| 5 | Evaluation + Demo lead | Yassine | Fake prediction arrays (`np.random.randint(0,2,100)` vs fake ground truth) for the metrics code; a dummy model that returns random predictions for the demo UI — tests the *code*, not real results |
+| 5 | Evaluation + Demo lead | Yassine | Fake label/score arrays for metrics; a dummy classifier for prediction and UI construction |
 
 Everyone builds to the shapes/signatures above, so at the integration
 checkpoints these all plug together without anyone having waited on
@@ -84,8 +88,12 @@ anyone else.
 - [x] Preprocessing lead — `preprocessing.py` (`get_transforms`)
 - [x] Model lead — `model/model.py` (`build_model`)
 - [x] Training lead — `train.py` (`train_model`)
-- [ ] Evaluation lead — `evaluate.py` (`evaluate_model`)
-- [ ] Demo lead — `demo.py` (`predict`)
+- [x] Evaluation lead — `evaluate.py` (`evaluate_model`)
+- [x] Demo lead — `demo.py` (`predict`)
+
+The Yassine modules are independently testable with synthetic inputs. Their
+real-data integration requires Romaric's ResNet checkpoint at
+`models/best_model.pth`.
 
 ### Data and preprocessing integration
 

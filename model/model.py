@@ -13,9 +13,15 @@ Contract with the rest of the team:
 import torch
 import torch.nn as nn
 from torchvision import models
+from pathlib import Path
 
 
-def build_model(num_classes: int = 2, freeze_base: bool = True, unfreeze_layer4: bool = False) -> nn.Module:
+def build_model(
+    num_classes: int = 2,
+    freeze_base: bool = True,
+    unfreeze_layer4: bool = False,
+    pretrained: bool = True,
+) -> nn.Module:
     """
     Build a ResNet18 model adapted for our classification task.
 
@@ -28,12 +34,15 @@ def build_model(num_classes: int = 2, freeze_base: bool = True, unfreeze_layer4:
                           deeper features to X-ray images. Optional stretch
                           goal — try this if the fully-frozen version
                           underperforms.
+        pretrained: load ImageNet weights. Set to False when loading a complete
+                    project checkpoint, which already contains all model weights.
 
     Returns:
         A torchvision ResNet18 model with a new final layer, ready for training.
     """
-    # Load ResNet18 pretrained on ImageNet
-    model = models.resnet18(weights="IMAGENET1K_V1")
+    # A complete project checkpoint does not need an ImageNet download first.
+    weights = "IMAGENET1K_V1" if pretrained else None
+    model = models.resnet18(weights=weights)
 
     # Freeze all layers by default so only the new classifier head trains
     if freeze_base:
@@ -53,6 +62,36 @@ def build_model(num_classes: int = 2, freeze_base: bool = True, unfreeze_layer4:
     model.fc = nn.Linear(num_features, num_classes)
 
     return model
+
+
+def load_trained_model(checkpoint_path: str | Path, device: torch.device) -> nn.Module:
+    """Load a train_model checkpoint onto ``device`` and return it in eval mode."""
+    checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.is_file():
+        raise FileNotFoundError(f"Model checkpoint not found: {checkpoint_path}")
+
+    try:
+        checkpoint = torch.load(
+            checkpoint_path, map_location=device, weights_only=True
+        )
+    except Exception as exc:
+        raise ValueError(f"Could not read model checkpoint: {checkpoint_path}") from exc
+
+    if not isinstance(checkpoint, dict) or "model_state_dict" not in checkpoint:
+        raise ValueError(
+            f"Invalid checkpoint {checkpoint_path}: expected a 'model_state_dict' entry."
+        )
+
+    model = build_model(pretrained=False)
+    try:
+        model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+    except (RuntimeError, TypeError) as exc:
+        raise ValueError(
+            f"Checkpoint weights are incompatible with the ResNet18 classifier: "
+            f"{checkpoint_path}"
+        ) from exc
+
+    return model.to(device).eval()
 
 
 def count_trainable_params(model: nn.Module) -> int:
