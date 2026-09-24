@@ -131,7 +131,7 @@ def train_model(
     val_loader: DataLoader,
     criterion: nn.Module,
     optimizer: Optimizer,
-    num_epochs: int,
+    num_epochs: int = 10,
     device: torch.device | None = None,
     checkpoint_path: str | Path = "best_model.pth",
     verbose: bool = True,
@@ -240,3 +240,34 @@ def train_model(
     model.load_state_dict(best_model_state)
 
     return model, history
+
+
+def plot_training_history(
+    history: dict[str, Any], output_path: str | Path = "training_curves.png"
+) -> Path:
+    """Save the training/validation loss and accuracy curves."""
+    import matplotlib.pyplot as plt
+
+    epochs = range(1, len(history["train_loss"]) + 1)
+    figure, axes = plt.subplots(1, 2, figsize=(10, 4))
+
+    axes[0].plot(epochs, history["train_loss"], label="Train")
+    axes[0].plot(epochs, history["val_loss"], label="Validation")
+    axes[0].set(title="Loss", xlabel="Epoch", ylabel="Loss")
+    axes[0].legend()
+
+    axes[1].plot(
+        epochs, [value * 100 for value in history["train_accuracy"]], label="Train"
+    )
+    axes[1].plot(
+        epochs, [value * 100 for value in history["val_accuracy"]], label="Validation"
+    )
+    axes[1].set(title="Accuracy", xlabel="Epoch", ylabel="Accuracy (%)")
+    axes[1].legend()
+
+    figure.tight_layout()
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(output_path, dpi=150)
+    plt.close(figure)
+    return output_path

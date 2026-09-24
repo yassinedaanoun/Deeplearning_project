@@ -26,15 +26,15 @@ get_dataloaders(batch_size=32) -> (train_loader, val_loader, test_loader)
 # Preprocessing lead delivers (preprocessing.py):
 get_transforms(split="train") -> torchvision.transforms.Compose
 # split in {"train", "val", "test"} — "train" includes augmentation,
-# "val"/"test" are deterministic (resize + normalize only). Must produce
-# the same 224x224 / 3-channel / ImageNet-normalized output data.py
-# already relies on, so it's a drop-in swap at integration (see note below).
+# "val"/"test" are deterministic (resize + normalize only); data.py uses
+# this interface for all three splits.
 
-# Model lead delivers (model.py):
+# Model lead delivers (model/model.py, exported by model/__init__.py):
 build_model(num_classes=2) -> model
 
 # Training lead delivers (train.py):
-train_model(model, train_loader, val_loader, epochs=10) -> (trained_model, history)
+train_model(model, train_loader, val_loader, criterion, optimizer,
+            num_epochs=10) -> (trained_model, history)
 
 # Evaluation lead delivers (evaluate.py):
 evaluate_model(model, test_loader) -> (confusion_matrix, precision, recall, f1)
@@ -49,7 +49,7 @@ predict(model, image) -> (label, confidence)
 project/
   data.py          # Data lead (Syrine)
   preprocessing.py # Preprocessing lead (Ayoub)
-  model.py         # Model lead (Omar)
+  model/           # Model lead (Omar): model.py + public exports
   train.py         # Training lead (Romaric)
   evaluate.py       \
   demo.py            > Evaluation + Demo lead (Yassine)
@@ -73,30 +73,22 @@ anyone else.
 ## Integration checkpoints
 
 - **End of Day 2:** Data + Preprocessing + Model + Training loop plugged
-  together for the first real run. This is also when `data.py` should
-  swap its current inline transforms for `preprocessing.get_transforms()`
-  (see note below) once Ayoub's module lands.
+  together for the first real run. `data.py` now uses
+  `preprocessing.get_transforms()` for each split.
 - **End of Day 4:** Trained model plugged into Evaluation + Demo
 
 ## Status
 
 - [x] Data lead — `data.py` (`get_dataloaders`) — done, see branch
       `step1/data-lead`
-- [ ] Preprocessing lead — `preprocessing.py` (`get_transforms`)
-- [ ] Model lead — `model.py` (`build_model`)
-- [ ] Training lead — `train.py` (`train_model`)
+- [x] Preprocessing lead — `preprocessing.py` (`get_transforms`)
+- [x] Model lead — `model/model.py` (`build_model`)
+- [x] Training lead — `train.py` (`train_model`)
 - [ ] Evaluation lead — `evaluate.py` (`evaluate_model`)
 - [ ] Demo lead — `demo.py` (`predict`)
 
-### Note on `data.py` and `preprocessing.py`
+### Data and preprocessing integration
 
-Step 0 left the transform pipeline allowed to live "merged into data.py
-or its own file." `data.py` currently ships its own internal
-`_train_transform()` / `_eval_transform()` (224x224 resize, ImageNet
-normalize, train-only flip/rotation) so the Data lead's deliverable is
-fully self-contained and testable today. Now that Preprocessing is a
-separate role, the integration step is: once `preprocessing.py` exposes
-`get_transforms(split)` matching the contract above, swap the two
-internal helper calls in `data.py`'s `ChestXrayDataset` construction for
-`preprocessing.get_transforms(split)` — everything downstream
-(shapes, dtypes, the resplit logic) is unaffected either way.
+`data.py` uses `preprocessing.get_transforms(split)` for train, validation,
+and test images. The shared transform function returns 3-channel,
+224x224 ImageNet-normalized tensors; only the training split is augmented.

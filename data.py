@@ -24,32 +24,13 @@ from pathlib import Path
 import torch
 from PIL import Image
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
-from torchvision import transforms
+from preprocessing import get_transforms
 
-IMAGE_SIZE = 224
 CLASS_TO_IDX = {"NORMAL": 0, "PNEUMONIA": 1}
-IMAGENET_MEAN = [0.485, 0.456, 0.406]
-IMAGENET_STD = [0.229, 0.224, 0.225]
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 SPLITS = ("train", "val", "test")
 
 DEFAULT_DATA_DIR = Path(__file__).resolve().parent / "data" / "chest_xray"
-
-
-def default_transform(train: bool = False) -> transforms.Compose:
-    """Resize/normalize for eval; add light augmentation for training."""
-    ops = [transforms.Resize((IMAGE_SIZE, IMAGE_SIZE))]
-    if train:
-        ops += [
-            transforms.RandomRotation(10),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomResizedCrop(IMAGE_SIZE, scale=(0.9, 1.0)),
-        ]
-    ops += [
-        transforms.ToTensor(),
-        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-    ]
-    return transforms.Compose(ops)
 
 
 def _scan_split_dir(split_dir: Path) -> list:
@@ -70,7 +51,7 @@ class ChestXrayDataset(Dataset):
     explicit list of (path, label) samples (used for the val resplit)."""
 
     def __init__(self, root_dir=None, transform=None, samples=None):
-        self.transform = transform or default_transform(train=False)
+        self.transform = transform or get_transforms("val")
         if samples is not None:
             self.samples = list(samples)
         else:
@@ -168,9 +149,9 @@ def get_dataloaders(
     if resplit_val:
         train_samples, val_samples = _stratified_resplit(train_samples, val_samples, val_size, seed)
 
-    train_ds = ChestXrayDataset(samples=train_samples, transform=default_transform(train=True))
-    val_ds = ChestXrayDataset(samples=val_samples, transform=default_transform(train=False))
-    test_ds = ChestXrayDataset(data_dir / "test", transform=default_transform(train=False))
+    train_ds = ChestXrayDataset(samples=train_samples, transform=get_transforms("train"))
+    val_ds = ChestXrayDataset(samples=val_samples, transform=get_transforms("val"))
+    test_ds = ChestXrayDataset(data_dir / "test", transform=get_transforms("test"))
 
     if use_weighted_sampler:
         train_loader = DataLoader(

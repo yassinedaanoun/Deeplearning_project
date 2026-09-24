@@ -1,6 +1,4 @@
 """Test d'acceptation autonome pour train.py.
-
-Aucun jeu de données Kaggle, téléchargement torchvision ou ResNet18 n'est requis.
 L'objectif est de démontrer que la mécanique d'entraînement est correcte et indépendante.
 """
 
